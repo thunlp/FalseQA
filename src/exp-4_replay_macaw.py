@@ -37,15 +37,15 @@ class MySeq2SeqTrainer(Seq2SeqTrainer):
 
         Subclass and override for custom behavior.
         """
-        global train_iter_count, already_seen_count, episodic_batch
+        global train_iter_count, already_seen_count, episodic_batch, update_gate
         if self.label_smoother is not None and "labels" in inputs:
             labels = inputs.pop("labels")
         else:
             labels = None
         falseqa_label = inputs.pop("label")
         if model.training:
-            if train_iter_count % 30 == 0:
-                episodic_batch = sample_normal(raw_episodic_dataset, batch_size, train_iter_count, 30)
+            if train_iter_count % update_gate == 0:
+                episodic_batch = sample_normal(raw_episodic_dataset, batch_size, train_iter_count, update_gate)
             train_iter_count += 1
             episodic_input_ids = episodic_batch.get('input_ids').cuda()
             episodic_labels = episodic_batch.get('labels').cuda()
@@ -86,7 +86,7 @@ class MySeq2SeqTrainer(Seq2SeqTrainer):
 
 
 parser = argparse.ArgumentParser(description='Input hyper-parameters')
-parser.add_argument('--model_name', type=str, default='macaw-3b')
+parser.add_argument('--model_name', type=str, default='allenai/macaw-3b')
 parser.add_argument('--seed', type=int, default=34)
 parser.add_argument('--prefix', type=str, default='potential tricky question: ')
 parser.add_argument('--max_input_length', type=int, default=100)
@@ -97,16 +97,18 @@ parser.add_argument('--lr', type=float, default=1e-5)
 parser.add_argument('--time_stamp', type=str, default='none')
 parser.add_argument('--scale', type=int, default=256)
 parser.add_argument('--test_only', type=str, default='False')
+parser.add_argument('--update_gate', type=int, default=30)
+parser.add_argument('--model_path', type=str, default='')
 input_args = parser.parse_args()
 
 
 # initialize
-global already_seen_count, train_iter_count, episodic_batch, sample_id_list
+global already_seen_count, train_iter_count, episodic_batch, sample_id_list, update_gate
 already_seen_count = 0
 train_iter_count = 0
 episodic_batch = None
 time_stamp = input_args.time_stamp
-model_path = '../../plm_cache/'
+model_path = input_args.model_path
 model_name = input_args.model_name
 prefix = input_args.prefix
 max_input_length = input_args.max_input_length
@@ -116,15 +118,16 @@ learning_rate = input_args.lr
 epoch = input_args.epoch
 test_only = input_args.test_only
 scale = input_args.scale
+update_gate = input_args.update_gate
 save_dir = f"../trained_model/exp-4/train_exp-4_scale-{scale}_{model_name}_{time_stamp}_{input_args.seed}"
 if test_only == 'True':
     model_checkpoint = f'../trained_model/exp-4/{model_name}'
     seed = int(model_name[model_name.rfind('_') + 1:])
-    tokenizer = T5Tokenizer.from_pretrained('../hg_cache/macaw-tokenizer')
+    tokenizer = T5Tokenizer.from_pretrained(model_checkpoint)
 else:
     model_checkpoint = model_path + f"{model_name}"
     seed = input_args.seed
-    tokenizer = T5Tokenizer.from_pretrained('../hg_cache/macaw-tokenizer')
+    tokenizer = T5Tokenizer.from_pretrained(model_checkpoint)
 setup_seed(seed)
 
 

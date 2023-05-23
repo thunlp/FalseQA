@@ -12,7 +12,6 @@ from transformers import DataCollatorForSeq2Seq, Seq2SeqTrainingArguments, Seq2S
 from transformers import T5Tokenizer, T5ForConditionalGeneration
 from transformers import pipeline
 from tqdm import tqdm
-# from macaw.utils import load_model, run_macaw
 
 
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
@@ -39,7 +38,8 @@ parser.add_argument('--lr', type=float, default=1e-5)
 parser.add_argument('--time_stamp', type=str, default='none')
 parser.add_argument('--test_only', type=str, default='False')
 parser.add_argument('--scale', type=int, default=4)
-parser.add_argument('--use_local', type=int, default=1)
+parser.add_argument('--use_local', type=int, default=0)
+parser.add_argument('--model_path', type=str, default='../../plm_cache/')
 input_args = parser.parse_args()
 
 
@@ -47,7 +47,7 @@ input_args = parser.parse_args()
 size_gate = 512
 scale = input_args.scale
 time_stamp = input_args.time_stamp
-model_path = '../../plm_cache/'
+model_path = input_args.model_path
 model_name = input_args.model_name
 prefix = input_args.prefix
 max_input_length = input_args.max_input_length
@@ -64,7 +64,7 @@ if test_only == 'True':
     if input_args.use_local == 1:
         tokenizer = T5Tokenizer.from_pretrained(f"{model_path}/{model_name}")
     else:
-        tokenizer = T5Tokenizer.from_pretrained("allenai/macaw-3b")
+        tokenizer = T5Tokenizer.from_pretrained(model_name)
 else:
     output_file = f"../output/exp-2/train_exp-2_scale-{scale}_{model_name}_{time_stamp}_{input_args.seed}.csv"
     model_checkpoint = model_path + f"{model_name}"
@@ -72,10 +72,10 @@ else:
     if input_args.use_local == 1:
         tokenizer = T5Tokenizer.from_pretrained(f"{model_path}/{model_name}")
     else:
-        tokenizer = T5Tokenizer.from_pretrained("allenai/macaw-3b")
+        tokenizer = T5Tokenizer.from_pretrained(model_name)
 setup_seed(seed)
 
-
+# define label word map here
 label_map = [
     tokenizer.encode('false', add_special_tokens=False)[0],
     tokenizer.encode('true', add_special_tokens=False)[0]
@@ -137,7 +137,6 @@ class MySeq2SeqTrainer(Seq2SeqTrainer):
         if self.args.past_index >= 0:
             self._past = outputs[self.args.past_index]
 
-        # from IPython import embed; embed(header="Here!!")
         if labels is not None:
             loss = self.label_smoother(outputs, labels)
         else:
@@ -149,7 +148,6 @@ class MySeq2SeqTrainer(Seq2SeqTrainer):
             temp_logits = logits[:, 1, :]
             selected_logits = temp_logits[:, interest_index]
             loss = loss_fct(selected_logits, falseqa_label)
-            # from IPython import embed; embed(header='in compute_loss: ')
             # loss = outputs["loss"] if isinstance(outputs, dict) else outputs[0]
         return (loss, outputs) if return_outputs else loss
 
@@ -231,7 +229,6 @@ def train():
 
 
     print("model training start.")
-    # from IPython import embed; embed()
     trainer.train()
     print("model training done.")
 
@@ -266,7 +263,6 @@ def test(model_checkpoint):
         outputs = model(input_ids=input_ids, decoder_input_ids=decoder_input_ids)
         logits = outputs.get('logits')
         interest_index = label_map
-        # from IPython import embed; embed()
         pred = logits.squeeze()[1, interest_index].argmax().item()
         result_list.append(pred)
 

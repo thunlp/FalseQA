@@ -5,10 +5,6 @@ import numpy as np
 
 arc_test = pd.read_csv('../dataset/exp-3/arc_test.csv')
 falseqa_test = pd.read_csv('../dataset/exp-3/falseqa_test.csv')
-question_type_noseen = pd.read_csv('../dataset/exp-5/question-type/simple_transfer_question-type_test-noseen.csv')
-question_type_seen = pd.read_csv('../dataset/exp-5/question-type/simple_transfer_question-type_test-seen.csv')
-error_type_noseen = pd.read_csv('../dataset/exp-5/error-type/simple_transfer_error-type_test-noseen.csv')
-error_type_seen = pd.read_csv('../dataset/exp-5/error-type/simple_transfer_error-type_test-seen.csv')
 
 
 def get_output(output_file_path_dict):
@@ -49,25 +45,6 @@ def compute_rougeL(output_file_path_dict):
         'arc-da': np.mean(rouges_arc_da),
         'falseqa': np.mean(rouges_falseqa),
         'total': np.mean(rouges_falseqa + rouges_arc_da)
-    }
-
-
-def compute_rougeL_transfer(output_file_path_dict, task_type):
-    seen_output, noseen_output = get_output_transfer(output_file_path_dict)
-    rouges = {'seen': [], 'noseen': []}
-    if task_type == 'question-type':
-        for (prediction, target) in zip(seen_output[seen_output.label == 1]['answer'], question_type_seen[question_type_seen.label == 1]['answer']):
-            rouges['seen'].append(metric.get_rouge_over_list(lower_obj(str(prediction)).replace('true question.', '').replace('tricky question.', ''), lower_obj(eval(target)[0:2]) if target.find('[') != -1 else str(target)))
-        for (prediction, target) in zip(noseen_output[noseen_output.label == 1]['answer'], question_type_noseen[question_type_noseen.label == 1]['answer']):
-            rouges['noseen'].append(metric.get_rouge_over_list(lower_obj(str(prediction)).replace('true question.', '').replace('tricky question.', ''), lower_obj(eval(target)[0:2]) if target.find('[') != -1 else str(target)))
-    else:
-        for (prediction, target) in zip(seen_output[seen_output.label == 1]['answer'], error_type_seen[error_type_seen.label == 1]['answer']):
-            rouges['seen'].append(metric.get_rouge_over_list(lower_obj(str(prediction)).replace('true question.', '').replace('tricky question.', ''), lower_obj(eval(target)[0:2]) if target.find('[') != -1 else str(target)))
-        for (prediction, target) in zip(noseen_output[noseen_output.label == 1]['answer'], error_type_noseen[error_type_noseen.label == 1]['answer']):
-            rouges['noseen'].append(metric.get_rouge_over_list(lower_obj(str(prediction)).replace('true question.', '').replace('tricky question.', ''), lower_obj(eval(target)[0:2]) if target.find('[') != -1 else str(target)))
-    return {
-        'seen': np.mean(rouges['seen']),
-        'noseen': np.mean(rouges['noseen'])
     }
 
 
@@ -119,39 +96,6 @@ def compute_tpr(output_file_path_dict):
     }
 
 
-def compute_tpr_transfer(output_file_path_dict, task_type):
-    seen_output, noseen_output = get_output_transfer(output_file_path_dict)
-    seen_tp_count, noseen_tp_count = 0, 0
-    seen_tpr, noseen_tpr = 0, 0
-
-
-    #   falseqa
-    if task_type == 'question-type':
-        for i in range(len(question_type_seen)):
-            if 'tricky question' in str(seen_output['answer'][i]).lower() and question_type_seen['label'][i] == 1:
-                seen_tp_count += 1
-        for i in range(len(question_type_noseen)):
-            if 'tricky question' in str(noseen_output['answer'][i]).lower() and question_type_noseen['label'][i] == 1:
-                noseen_tp_count += 1
-        seen_tpr = seen_tp_count / len(question_type_seen[question_type_seen.label == 1])
-        noseen_tpr = noseen_tp_count / len(question_type_noseen[question_type_noseen.label == 1])
-    else:
-        for i in range(len(error_type_seen)):
-            if 'tricky question' in str(seen_output['answer'][i]).lower() and error_type_seen['label'][i] == 1:
-                seen_tp_count += 1
-        for i in range(len(error_type_noseen)):
-            if 'tricky question' in str(noseen_output['answer'][i]).lower() and error_type_noseen['label'][i] == 1:
-                noseen_tp_count += 1
-        seen_tpr = seen_tp_count / len(error_type_seen[error_type_seen.label == 1])
-        noseen_tpr = noseen_tp_count / len(error_type_noseen[error_type_noseen.label == 1])
-
-
-    return {
-        'seen': seen_tpr,
-        'noseen': noseen_tpr
-    }
-
-
 def compute_tnr(output_file_path_dict):
     arc_da_output, falseqa_output = get_output(output_file_path_dict)
     falseqa_tn_count = 0
@@ -168,38 +112,6 @@ def compute_tnr(output_file_path_dict):
         'falseqa': falseqa_tnr,
     }
 
-def compute_tnr_transfer(output_file_path_dict, task_type):
-    seen_output, noseen_output = get_output_transfer(output_file_path_dict)
-    seen_tn_count, noseen_tn_count = 0, 0
-    seen_tnr, noseen_tnr = 0, 0
-
-
-    #   falseqa
-    if task_type == 'question-type':
-        for i in range(len(question_type_seen)):
-            if 'true question' in str(seen_output['answer'][i]).lower() and question_type_seen['label'][i] == 0:
-                seen_tn_count += 1
-        for i in range(len(question_type_noseen)):
-            if 'true question' in str(noseen_output['answer'][i]).lower() and question_type_noseen['label'][i] == 0:
-                noseen_tn_count += 1
-        seen_tnr = seen_tn_count / len(question_type_seen[question_type_seen.label == 0])
-        noseen_tnr = noseen_tn_count / len(question_type_noseen[question_type_noseen.label == 0])
-    else:
-        for i in range(len(error_type_seen)):
-            if 'true question' in str(seen_output['answer'][i]).lower() and error_type_seen['label'][i] == 0:
-                seen_tn_count += 1
-        for i in range(len(error_type_noseen)):
-            if 'true question' in str(noseen_output['answer'][i]).lower() and error_type_noseen['label'][i] == 0:
-                noseen_tn_count += 1
-        seen_tnr = seen_tn_count / len(error_type_seen[error_type_seen.label == 0])
-        noseen_tnr = noseen_tn_count / len(error_type_noseen[error_type_noseen.label == 0])
-
-
-    return {
-        'seen': seen_tnr,
-        'noseen': noseen_tnr
-    }
-
 
 def compute_arc_f1(output_file_path_dict):
     arc_da_output, falseqa_output = get_output(output_file_path_dict)
@@ -208,25 +120,6 @@ def compute_arc_f1(output_file_path_dict):
         f1s.append(metric.get_f1_over_list(lower_obj(str(prediction)).replace('true question.', '').replace('tricky question.', ''), lower_obj(eval(target)) if target.find('[') != -1 else str(target)))
     return {
         'arc-da': np.mean(f1s)
-    }
-
-
-def compute_f1_transfer(output_file_path_dict, task_type):
-    seen_output, noseen_output = get_output_transfer(output_file_path_dict)
-    f1s = {'seen': [], 'noseen': []}
-    if task_type == 'question-type':
-        for (prediction, target) in zip(seen_output[seen_output.label == 1]['answer'], question_type_seen[question_type_seen.label == 1]['answer']):
-            f1s['seen'].append(metric.get_f1_over_list(lower_obj(str(prediction)).replace('true question.', '').replace('tricky question.', ''), lower_obj(eval(target)[0:2]) if target.find('[') != -1 else str(target)))
-        for (prediction, target) in zip(noseen_output[noseen_output.label == 1]['answer'], question_type_noseen[question_type_noseen.label == 1]['answer']):
-            f1s['noseen'].append(metric.get_f1_over_list(lower_obj(str(prediction)).replace('true question.', '').replace('tricky question.', ''), lower_obj(eval(target)[0:2]) if target.find('[') != -1 else str(target)))
-    else:
-        for (prediction, target) in zip(seen_output[seen_output.label == 1]['answer'], error_type_seen[error_type_seen.label == 1]['answer']):
-            f1s['seen'].append(metric.get_f1_over_list(lower_obj(str(prediction)).replace('true question.', '').replace('tricky question.', ''), lower_obj(eval(target)[0:2]) if target.find('[') != -1 else str(target)))
-        for (prediction, target) in zip(noseen_output[noseen_output.label == 1]['answer'], error_type_noseen[error_type_noseen.label == 1]['answer']):
-            f1s['noseen'].append(metric.get_f1_over_list(lower_obj(str(prediction)).replace('true question.', '').replace('tricky question.', ''), lower_obj(eval(target)[0:2]) if target.find('[') != -1 else str(target)))
-    return {
-        'seen': np.mean(f1s['seen']),
-        'noseen': np.mean(f1s['noseen'])
     }
 
 

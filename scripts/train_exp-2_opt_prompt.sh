@@ -1,5 +1,11 @@
 #!/bin/bash
   
+log_directory="log"
+if [ ! -d "$log_directory" ]; then
+  mkdir "$log_directory"
+  echo "build log_directory successfully"
+fi
+
 model_name=opt-2.7b-da
 
 CUDALIST=(0,1,2,3 4,5,6 7 0,1,2,3 4,5,6 7 0,1,2,3 4,5,6 7 )

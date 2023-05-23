@@ -34,7 +34,7 @@ parser = argparse.ArgumentParser(description='Input hyper-parameters')
 parser.add_argument("--model_parallel", type=bool, default=True)
 parser.add_argument('--model_name', type=str, default='opt-1.3b-da')
 parser.add_argument('--seed', type=int, default=34)
-# parser.add_argument('--prefix', type=str, default='potential tricky question: ')
+parser.add_argument('--prefix', type=str, default='potential tricky question: ')
 parser.add_argument('--prompt_text', type=str, default='')
 parser.add_argument('--max_length', type=int, default=128)
 parser.add_argument('--batch_size', type=int, default=32)
@@ -43,6 +43,7 @@ parser.add_argument('--lr', type=float, default=1e-5)
 parser.add_argument('--time_stamp', type=str, default='none')
 parser.add_argument('--test_only', type=str, default='False')
 parser.add_argument('--scale', type=int, default=4)
+parser.add_argument('--model_path', type=str, default='../../plm_cache/')
 input_args = parser.parse_args()
 
 
@@ -50,9 +51,9 @@ input_args = parser.parse_args()
 size_gate = 512
 scale = input_args.scale
 time_stamp = input_args.time_stamp
-model_path = '../../plm_cache/'
+model_path = input_args.model_path
 model_name = input_args.model_name
-# prefix = input_args.prefix
+prefix = input_args.prefix
 max_length = input_args.max_length
 batch_size = input_args.batch_size
 model_parallel = input_args.model_parallel
@@ -87,7 +88,6 @@ class DataCollator(HfDataCollatorMixin):
         self.return_tensors = 'pt'
 
     def torch_call(self, features):
-        # from IPython import embed; embed(header="In data collator")
         return torch_default_data_collator(features=features)
 
 
@@ -108,10 +108,8 @@ class MyTrainer(Trainer):
         except IndexError:
             from IPython import embed; embed()
         final_labels = torch.tensor([label_map[key] for key in labels.max(dim=1).values.tolist()]).cuda()
-        # from IPython import embed; embed(header="In my trainer")
         loss_fct = nn.CrossEntropyLoss()
         loss = loss_fct(selected_logits, final_labels)
-        # from IPython import embed; embed()
 
         return (loss, outputs) if return_outputs else loss
 
@@ -146,9 +144,6 @@ def model_to_device(model, model_name):
         model.parallelize(device_map=device_map)
         print("Done model parallel")
     else:
-        print("Begin distributed data parallel")
-        # model = DDP(model,device_ids=[0])
-        print("End distributed data parallel")
         model = model.cuda()
     return model
 
@@ -201,7 +196,6 @@ def train():
             ta = {k: tokenized_answers[k][qid] for k in tokenized_answers}
             tqa = {k: tokenized_qa[k][qid] for k in tokenized_qa}
 
-            # from IPython import embed; embed(header="True")
             len_a = len(ta['input_ids'])
             len_qa = len(tqa['input_ids'])
             len_q = len_qa - len_a
@@ -218,7 +212,6 @@ def train():
                 attention_mask = tqa['attention_mask'] + [0] * (-to_truncate)
                 labels = [-100] * len_q + input_ids[len_q:len_qa + 1] + [-100] * (-to_truncate - 1)
 
-            # from IPython import embed; embed(header="True")
             if not (len(input_ids) == len(attention_mask) == len(labels) == max_length_with_pad):
                 from IPython import embed;
                 embed(header="In preprocess function")
@@ -314,9 +307,7 @@ def test(model_checkpoint):
             outputs = model(input_ids)
             logits = outputs.get('logits')
             interest_index = list(label_map.keys())
-            # from IPython import embed; embed()
             pred = logits[0, -1, interest_index].argmax(dim=-1).item()
-            # from IPython import embed; embed()
             result_list.append(pred)
     print("generate done.")
 

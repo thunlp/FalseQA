@@ -3,7 +3,11 @@ model_name=$1
 
 #!/bin/bash
 
-
+log_directory="log"
+if [ ! -d "$log_directory" ]; then
+  mkdir "$log_directory"
+  echo "build log_directory successfully"
+fi
 
 CUDALIST=(5 6 7) #0,1 0,1 0,1 0,1 0,1 0,1 0,1 0,1 0,1 0,1 0,1 0,1 0,1)
 # CUDALIST=(0 1 0 1 0 1 0 1 0 1 0 1)

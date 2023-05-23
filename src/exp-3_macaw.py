@@ -42,13 +42,15 @@ parser.add_argument('--time_stamp', type=str, default='none')
 parser.add_argument('--test_only', type=str, default='False')
 parser.add_argument('--scale', type=int, default=4)
 parser.add_argument('--token_loss', type=int, default=0)
+parser.add_argument('--loss_rate', type=float, default=1.0)
+parser.add_argument('--model_path', type=str, default='')
 input_args = parser.parse_args()
 
 
 # initialize
 scale = input_args.scale
 time_stamp = input_args.time_stamp
-model_path = '../../plm_cache/'
+model_path = input_args.model_path
 model_name = input_args.model_name
 prefix = input_args.prefix
 max_input_length = input_args.max_input_length
@@ -58,6 +60,7 @@ learning_rate = input_args.lr
 epoch = input_args.epoch
 test_only = input_args.test_only
 global token_loss
+global loss_rate
 token_loss = input_args.token_loss
 save_dir = f"../trained_model/exp-3/train_exp-3_scale-{scale}_{model_name}_{time_stamp}_{input_args.seed}"
 if test_only == 'True':
@@ -79,6 +82,7 @@ class MySeq2SeqTrainer(Seq2SeqTrainer):
         Subclass and override for custom behavior.
         """
         global token_loss
+        global loss_rate
         if self.label_smoother is not None and "labels" in inputs:
             labels = inputs.pop("labels")
         else:
@@ -90,8 +94,7 @@ class MySeq2SeqTrainer(Seq2SeqTrainer):
             logits = outputs.get('logits')
             cls_labels = inputs['labels'][:, 6].cuda()
             cls_loss = F.cross_entropy(logits[:, 6, :], cls_labels)
-            outputs['loss'] = cls_loss + outputs["loss"] if isinstance(outputs, dict) else outputs[0]
-        # from IPython import embed; embed()
+            outputs['loss'] = loss_rate * cls_loss + outputs["loss"] if isinstance(outputs, dict) else outputs[0]
         # Save past state if it exists
         # TODO: this needs to be fixed and made cleaner later.
         if self.args.past_index >= 0:

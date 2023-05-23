@@ -1,6 +1,12 @@
 #!/bin/bash
   
-for model_name in macaw-11b;
+log_directory="log"
+if [ ! -d "$log_directory" ]; then
+  mkdir "$log_directory"
+  echo "build log_directory successfully"
+fi
+
+for model_name in allenai/macaw-11b;
 do
 time_stamp=$(date "+%Y-%m-%d_%H-%M-%S")
     for scale in 1187 256;

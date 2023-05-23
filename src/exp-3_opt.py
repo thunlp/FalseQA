@@ -42,7 +42,7 @@ class DataCollator(HfDataCollatorMixin):
 
 class MyTrainer(Trainer):
     def compute_loss(self, model, inputs, return_outputs=False):
-        global token_loss, classify_token_dict
+        global token_loss, classify_token_dict, loss_rate
         outputs = model(**inputs)
         logits = outputs.get('logits')
         if token_loss == 1:
@@ -58,7 +58,7 @@ class MyTrainer(Trainer):
             except TypeError:
                 from IPython import embed; embed()
             cls_loss = F.cross_entropy(cls_token_logits, cls_labels)
-            outputs['loss'] = outputs.get('loss') + cls_loss
+            outputs['loss'] = outputs.get('loss') + cls_loss * loss_rate
         loss = outputs.get('loss')
         return (loss, outputs) if return_outputs else loss
 
@@ -77,13 +77,15 @@ parser.add_argument('--lr', type=float, default=1e-5)
 parser.add_argument('--time_stamp', type=str, default='none')
 parser.add_argument('--test_only', type=str, default='False')
 parser.add_argument('--scale', type=int, default=4)
+parser.add_argument('--model_path', type=str, default='')
+parser.add_argument('--loss_rate', type=float, default=1.0)
 input_args = parser.parse_args()
 
 
 # initialize
 scale = input_args.scale
 time_stamp = input_args.time_stamp
-model_path = '../../plm_cache/'
+model_path = input_args.model_path
 model_name = input_args.model_name
 max_length = input_args.max_length
 batch_size = input_args.batch_size
@@ -92,7 +94,9 @@ learning_rate = input_args.lr
 epoch = input_args.epoch
 test_only = input_args.test_only
 global token_loss
+global loss_rate
 token_loss = input_args.token_loss
+loss_rate = input_args.loss_rate
 save_dir = f"../trained_model/exp-3/train_exp-3_scale-{scale}_{model_name}_{time_stamp}_{input_args.seed}"
 if test_only == 'True':
     model_checkpoint = f'../trained_model/exp-3/{model_name}'
@@ -140,9 +144,6 @@ def model_to_device(model, model_name):
         model.parallelize(device_map=device_map)
         print("Done model parallel")
     else:
-        print("Begin distributed data parallel")
-        # model = DDP(model,device_ids=[0])
-        print("End distributed data parallel")
         model = model.cuda()
     return model
 

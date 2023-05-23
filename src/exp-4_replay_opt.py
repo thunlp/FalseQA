@@ -46,14 +46,14 @@ class MyTrainer(Trainer):
 
         Subclass and override for custom behavior.
         """
-        global train_iter_count, already_seen_count, episodic_batch
+        global train_iter_count, already_seen_count, episodic_batch, update_gate
         if self.label_smoother is not None and "labels" in inputs:
             labels = inputs.pop("labels")
         else:
             labels = None
         if model.training:
-            if train_iter_count % 30 == 0:
-                episodic_batch = sample_normal(raw_episodic_dataset, batch_size, train_iter_count, 30)
+            if train_iter_count % update_gate == 0:
+                episodic_batch = sample_normal(raw_episodic_dataset, batch_size, train_iter_count, update_gate)
             train_iter_count += 1
             episodic_input_ids = episodic_batch.get('input_ids').cuda()
             episodic_labels = episodic_batch.get('labels').cuda()
@@ -110,7 +110,7 @@ parser = argparse.ArgumentParser(description='Input hyper-parameters')
 parser.add_argument("--model_parallel", type=bool, default=True)
 parser.add_argument('--model_name', type=str, default='opt-2.7b-da')
 parser.add_argument('--seed', type=int, default=34)
-# parser.add_argument('--prefix', type=str, default='potential tricky question: ')
+parser.add_argument('--prefix', type=str, default='potential tricky question: ')
 parser.add_argument('--prompt_text', type=str, default='')
 parser.add_argument('--max_length', type=int, default=128)
 parser.add_argument('--batch_size', type=int, default=32)
@@ -119,16 +119,19 @@ parser.add_argument('--lr', type=float, default=1e-5)
 parser.add_argument('--time_stamp', type=str, default='none')
 parser.add_argument('--test_only', type=str, default='False')
 parser.add_argument('--scale', type=int, default=4)
+parser.add_argument('--update_gate', type=int, default=30)
+parser.add_argument('--model_path', type=str, default='')
 input_args = parser.parse_args()
 
 
 # initialize
-global already_seen_count, train_iter_count, episodic_batch, sample_id_list
+global already_seen_count, train_iter_count, episodic_batch, sample_id_list, update_gate
 already_seen_count = 0
 train_iter_count = 0
 episodic_batch = None
+update_gate = input_args.update_gate
 time_stamp = input_args.time_stamp
-model_path = '../../plm_cache/'
+model_path = input_args.model_path
 model_name = input_args.model_name
 max_length = input_args.max_length
 model_parallel = input_args.model_parallel
