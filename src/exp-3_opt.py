@@ -66,7 +66,6 @@ class MyTrainer(Trainer):
 
 parser = argparse.ArgumentParser(description='Input hyper-parameters')
 parser.add_argument("--model_parallel", type=bool, default=True)
-parser.add_argument('--token_loss', type=int, default=0)
 parser.add_argument('--model_name', type=str, default='opt-2.7b-da')
 parser.add_argument('--seed', type=int, default=34)
 parser.add_argument('--prompt_text', type=str, default='')
@@ -79,6 +78,7 @@ parser.add_argument('--test_only', type=str, default='False')
 parser.add_argument('--scale', type=int, default=4)
 parser.add_argument('--model_path', type=str, default='')
 parser.add_argument('--loss_rate', type=float, default=1.0)
+parser.add_argument('--token_loss', type=int, default=0)
 input_args = parser.parse_args()
 
 

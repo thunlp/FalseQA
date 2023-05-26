@@ -37,7 +37,7 @@ class MySeq2SeqTrainer(Seq2SeqTrainer):
 
         Subclass and override for custom behavior.
         """
-        global train_iter_count, already_seen_count, episodic_batch, update_gate
+        global train_iter_count, already_seen_count, episodic_batch, update_gate, loss_rate
         if self.label_smoother is not None and "labels" in inputs:
             labels = inputs.pop("labels")
         else:
@@ -61,7 +61,7 @@ class MySeq2SeqTrainer(Seq2SeqTrainer):
             logits = outputs.get('logits')
             cls_labels = cat_labels[:, 6]
             cls_loss = F.cross_entropy(logits[:, 6, :], cls_labels)
-            outputs["loss"] = cls_loss + outputs.loss
+            outputs["loss"] = loss_rate * cls_loss + outputs.loss
         else:
             print('in evaluate, set train_iter_count to 0.')
             outputs = model(input_ids=inputs['input_ids'], labels=inputs['labels'], attention_mask=inputs['attention_mask'])
@@ -99,14 +99,16 @@ parser.add_argument('--scale', type=int, default=256)
 parser.add_argument('--test_only', type=str, default='False')
 parser.add_argument('--update_gate', type=int, default=30)
 parser.add_argument('--model_path', type=str, default='')
+parser.add_argument('--loss_rate', type=float, default=1.0)
 input_args = parser.parse_args()
 
 
 # initialize
-global already_seen_count, train_iter_count, episodic_batch, sample_id_list, update_gate
+global already_seen_count, train_iter_count, episodic_batch, sample_id_list, update_gate, loss_rate
 already_seen_count = 0
 train_iter_count = 0
 episodic_batch = None
+loss_rate = input_args.loss_rate
 time_stamp = input_args.time_stamp
 model_path = input_args.model_path
 model_name = input_args.model_name

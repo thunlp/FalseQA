@@ -46,7 +46,7 @@ class MyTrainer(Trainer):
 
         Subclass and override for custom behavior.
         """
-        global train_iter_count, already_seen_count, episodic_batch, update_gate
+        global train_iter_count, already_seen_count, episodic_batch, update_gate, loss_rate
         if self.label_smoother is not None and "labels" in inputs:
             labels = inputs.pop("labels")
         else:
@@ -80,7 +80,7 @@ class MyTrainer(Trainer):
             except TypeError:
                 from IPython import embed; embed()
             cls_loss = F.cross_entropy(cls_token_logits, cls_labels)
-            outputs['loss'] = outputs.get('loss') + cls_loss
+            outputs['loss'] = outputs.get('loss') + cls_loss * loss_rate
             loss = outputs.get('loss')
         else:
             print('in evaluate, set train_iter_count to 0.')
@@ -121,14 +121,16 @@ parser.add_argument('--test_only', type=str, default='False')
 parser.add_argument('--scale', type=int, default=4)
 parser.add_argument('--update_gate', type=int, default=30)
 parser.add_argument('--model_path', type=str, default='')
+parser.add_argument('--loss_rate', type=float, default=1.0)
 input_args = parser.parse_args()
 
 
 # initialize
-global already_seen_count, train_iter_count, episodic_batch, sample_id_list, update_gate
+global already_seen_count, train_iter_count, episodic_batch, sample_id_list, update_gate, loss_rate
 already_seen_count = 0
 train_iter_count = 0
 episodic_batch = None
+loss_rate = input_args.loss_rate
 update_gate = input_args.update_gate
 time_stamp = input_args.time_stamp
 model_path = input_args.model_path

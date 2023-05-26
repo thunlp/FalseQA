@@ -41,9 +41,9 @@ parser.add_argument('--lr', type=float, default=1e-5)
 parser.add_argument('--time_stamp', type=str, default='none')
 parser.add_argument('--test_only', type=str, default='False')
 parser.add_argument('--scale', type=int, default=4)
+parser.add_argument('--model_path', type=str, default='')
 parser.add_argument('--token_loss', type=int, default=0)
 parser.add_argument('--loss_rate', type=float, default=1.0)
-parser.add_argument('--model_path', type=str, default='')
 input_args = parser.parse_args()
 
 
