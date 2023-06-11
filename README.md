@@ -9,7 +9,16 @@ The main content of this repository is the dataset proposed in our work, which c
 - label: This column contains the binary label for each question. The value 1 indicates a false premise question, while 0 indicates a true premise question.
 
 ## Scripts
-To conduct the few-shot experiments, we randomly sample from the train.csv file and store the samples in a temporary file named train_{scale}shots_{seed}seed.csv. We then utilize the scripts located in the scripts/ directory to run the experiments.
+To conduct the few-shot experiments, we randomly sample from the train.csv file and store the samples in a temporary file named train_{scale}shots_{seed}seed.csv. We then utilize the scripts located in the scripts/ directory to run the 
+experiments.
 
+You can run the code like this.
+```console
+bash scripts/train_exp-2_macaw_prompt.sh t5-large
+```
+
+You will get a log directory and log files in log/exp-{i}.
+
+If you prefer, you can create custom scripts to execute the code concurrently across multiple processes. Detailed information on hyperparameters can be found in the 'README.md' file located in the './scripts' directory.
 ## Update
 This work was completed prior to the rise of ChatGPT. However, we have tested ChatGPT's performance on our dataset and found it to be remarkably good. This may be attributed to the fact that the instruction tuning data contains false premise questions, as highlighted in the InstructGPT and GPT-4 reports. *Currently, we are working on adapting our dataset to the instruction tuning format to let more instruction-tuned model have such abilities*.
