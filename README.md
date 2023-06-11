@@ -17,7 +17,7 @@ You can run the code like this.
 bash scripts/train_exp-2_macaw_prompt.sh t5-large
 ```
 
-You will get a log directory and log files in log/exp-{i}.
+You will get a log directory and log files in './log/exp-{i}'.
 
 If you prefer, you can create custom scripts to execute the code concurrently across multiple processes. Detailed information on hyperparameters can be found in the 'README.md' file located in the './scripts' directory.
 ## Update
